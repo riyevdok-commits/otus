@@ -51,7 +51,7 @@ route-map PBR_VLAN15 permit 10
 
 ### 3. Применение политики PBR
 Применил политику PBR к входящему интерфейсу:
-```cisco
+```
 interface Ethernet0/2.5
  ip policy route-map PBR_VLAN5
 
@@ -87,7 +87,6 @@ R28#
 
 
 ### 5. Настройка IP SLA
-Настройка IP SLA.
 
 IP SLA для отслеживания в сторону R26:
 ```
@@ -117,7 +116,7 @@ track 1 ip sla 1 reachability
 ```
 
 Для R25:
-```c
+```
 track 2 ip sla 2 reachability
  delay down 90 up 90
 ```
