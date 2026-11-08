@@ -112,135 +112,102 @@ R28(config)# ip sla schedule 2 life forever start-time now
 Для R26:
 ```
 track 1 ip sla 1 reachability
- delay down 90 up 90
+ delay down 10 up 10
 ```
 
 Для R25:
 ```
 track 2 ip sla 2 reachability
- delay down 90 up 90
+ delay down 10 up 10
 ```
 
 ### 7. Изменение конфигурации Route-map
-Изменил конфигурацию Route-map, заменил next-hop на проверку доступности через track.
+Добавил основные и резервные пути, изменил конфигурацию Route-map, заменил next-hop на проверку доступности через track.
 
 Для VLAN 5:
 ```
 R28(config)#route-map PBR_VLAN5 permit 10
-R28(config-route-map)# no set ip next-hop 10.0.30.1
 R28(config-route-map)#set ip next-hop verify-availability 10.0.30.1 10 track 1
+R28(config-route-map)#set ip next-hop verify-availability 10.0.29.1 20 track 2
 R28(config-route-map)# exit
 ```
 
 Для VLAN 15:
 ```
 R28(config)#route-map PBR_VLAN15 permit 10
-R28(config-route-map)# no set ip next-hop 10.0.29.1
 R28(config-route-map)#set ip next-hop verify-availability 10.0.29.1 10 track 2
+R28(config-route-map)#set ip next-hop verify-availability 10.0.30.1 20 track 1
 R28(config-route-map)# exit
 ```
-
+### 8. Маршруты по умолчанию
+```
+R28(config)#ip route 0.0.0.0 0.0.0.0 10.0.29.1 track 2
+R28(config)#ip route 0.0.0.0 0.0.0.0 10.0.30.1 track 1 10
+```
 ### Проверка работы IP SLA и PBR
 
 **1. Проверка статистики IP SLA:**
 ```
-R28#show ip sla statistics
+R28#sh ip sla statistics
 IPSLAs Latest Operation Statistics
 
 IPSLA operation id: 1
         Latest RTT: 1 milliseconds
-Latest operation start time: 20:14:21 UTC Sat Nov 7 2026
+Latest operation start time: 13:43:21 UTC Sun Nov 8 2026
 Latest operation return code: OK
-Number of successes: 16
+Number of successes: 190
 Number of failures: 0
 Operation time to live: Forever
 
 IPSLA operation id: 2
         Latest RTT: 1 milliseconds
-Latest operation start time: 20:14:23 UTC Sat Nov 7 2026
+Latest operation start time: 13:43:23 UTC Sun Nov 8 2026
 Latest operation return code: OK
-Number of successes: 14
+Number of successes: 188
 Number of failures: 0
 Operation time to live: Forever
-```
-Порты в состоянии UP.
 
-**2. Проверка объектов Track и Route-Map (до сбоя):**
+```
+
+**2. Проверка объектов Track и Route-Map:**
 ```
 R28#show track
 Track 1
   IP SLA 1 reachability
   Reachability is Up
-    1 change, last change 00:35:53
-  Delay up 90 secs, down 90 secs
+    3 changes, last change 17:20:52
+  Delay up 10 secs, down 10 secs
   Latest operation return code: OK
   Latest RTT (millisecs) 1
   Tracked by:
     Route Map 0
+    Static IP Routing 0
 Track 2
   IP SLA 2 reachability
   Reachability is Up
-    1 change, last change 00:35:38
-  Delay up 90 secs, down 90 secs
+    1 change, last change 18:05:19
+  Delay up 10 secs, down 10 secs
   Latest operation return code: OK
   Latest RTT (millisecs) 1
   Tracked by:
     Route Map 0
-
-R28#show route-map
+    Static IP Routing 0
+```
+```
+R28#sh route-map
 route-map PBR_VLAN15, permit, sequence 10
   Match clauses:
     ip address (access-lists): PBR_VLAN15
   Set clauses:
     ip next-hop verify-availability 10.0.29.1 10 track 2  [up]
+    ip next-hop verify-availability 10.0.30.1 20 track 1  [up]
   Policy routing matches: 0 packets, 0 bytes
 route-map PBR_VLAN5, permit, sequence 10
   Match clauses:
     ip address (access-lists): PBR_VLAN5
   Set clauses:
     ip next-hop verify-availability 10.0.30.1 10 track 1  [up]
-  Policy routing matches: 0 packets, 0 bytes
-```
-
-**3. Имитация сбоя (выключение интерфейса e0/1 на R26):**
-```
-R26(config)#interface e0/1
-R26(config-if)#shut
-```
-
-**4. Проверка реакции системы на сбой:**
-```
-R28#show track
-Track 1
-  IP SLA 1 reachability
-  Reachability is Down
-    2 changes, last change 00:00:10
-  Delay up 90 secs, down 90 secs
-  Latest operation return code: Timeout
-  Tracked by:
-    Route Map 0
-Track 2
-  IP SLA 2 reachability
-  Reachability is Up
-    1 change, last change 00:40:42
-  Delay up 90 secs, down 90 secs
-  Latest operation return code: OK
-  Latest RTT (millisecs) 1
-  Tracked by:
-    Route Map 0
-
-R28#show route-map
-route-map PBR_VLAN15, permit, sequence 10
-  Match clauses:
-    ip address (access-lists): PBR_VLAN15
-  Set clauses:
-    ip next-hop verify-availability 10.0.29.1 10 track 2  [up]
-  Policy routing matches: 0 packets, 0 bytes
-route-map PBR_VLAN5, permit, sequence 10
-  Match clauses:
-    ip address (access-lists): PBR_VLAN5
-  Set clauses:
-    ip next-hop verify-availability 10.0.30.1 10 track 1  [down]
+    ip next-hop verify-availability 10.0.29.1 20 track 2  [up]
   Policy routing matches: 0 packets, 0 bytes
 ```
 
