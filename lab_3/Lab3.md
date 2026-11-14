@@ -14,7 +14,7 @@
 
 ## Схема : 
 
-![alt text](image.png)
+![alt text](Снимок.PNG)
 
 
 
